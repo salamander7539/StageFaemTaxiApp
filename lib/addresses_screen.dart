@@ -55,6 +55,8 @@ var destUnrestricted_value,
     destLat,
     destLon;
 
+
+
 class _MyAddressState extends State<MyAddress> {
   String myAddress, destinationMark;
   AutoCompleteTextField searchTextField;
@@ -64,13 +66,22 @@ class _MyAddressState extends State<MyAddress> {
 
   static List<AddressData> addresses = new List<AddressData>();
   bool loading = true;
+  bool _isVisible = false;
+  bool active = true;
+  bool toggleActive = true;
+
+  void showToast() {
+    setState(() {
+      _isVisible = !_isVisible;
+    });
+  }
 
   void getAddresses(String name) async {
     try {
       var url = "https://crm.apis.stage.faem.pro/api/v2/addresses";
       var jsonBody = json.encode({"name": name});
       final response =
-      await http.post(url, body: jsonBody, headers: <String, String>{
+          await http.post(url, body: jsonBody, headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       });
       if (response.statusCode == 200) {
@@ -117,7 +128,7 @@ class _MyAddressState extends State<MyAddress> {
       var url = "https://crm.apis.stage.faem.pro/api/v2/addresses";
       var jsonBody = json.encode({"name": name});
       final response =
-      await http.post(url, body: jsonBody, headers: <String, String>{
+          await http.post(url, body: jsonBody, headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       });
       if (response.statusCode == 200) {
@@ -185,6 +196,8 @@ class _MyAddressState extends State<MyAddress> {
             child: Text(
               addressData.unrestricted_value,
               style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF595959),
                 fontSize: 20.0,
               ),
               softWrap: true,
@@ -206,86 +219,74 @@ class _MyAddressState extends State<MyAddress> {
     getDestination("");
   }
 
-
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
     return Scaffold(
+      resizeToAvoidBottomPadding: false,
       body: SingleChildScrollView(
         child: Container(
-          margin: EdgeInsets.only(top: 100.0),
+          margin: EdgeInsets.only(top: 60.0),
           child: Column(
             children: <Widget>[
-              Text(
-                "Введите адрес",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 25.0,
-                ),
-              ),
               Container(
-                padding: EdgeInsets.only(left: 16.0, right: 20.0),
+                padding: EdgeInsets.only(
+                  left: 16.0,
+                  right: 20.0,
+                ),
                 child: Row(
                   children: <Widget>[
                     Flexible(
                       child: loading
                           ? CircularProgressIndicator()
                           : searchTextField =
-                          AutoCompleteTextField<AddressData>(
-                            key: key,
-                            textChanged: (String value) {
-                              if (value.length > 0) {
-                                getAddresses(value);
-                              }
-                            },
-                            clearOnSubmit: false,
-                            suggestions: addresses,
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 20.0,
+                              AutoCompleteTextField<AddressData>(
+                              key: key,
+                              textChanged: (String value) {
+                                if (value.length > 0) {
+                                  getAddresses(value);
+                                }
+                              },
+                              clearOnSubmit: false,
+                              suggestions: addresses,
+                              style: TextStyle(
+                                color: Color(0xFF595959),
+                                fontSize: 20.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: InputDecoration(
+                                contentPadding:
+                                    EdgeInsets.fromLTRB(10.0, 30.0, 10.0, 20.0),
+                                labelText: "Ваше местоположение",
+                                labelStyle: TextStyle(
+                                  color: Color(0xFFB2B2B2),
+                                  fontSize: 20.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              itemFilter: (item, query) {
+                                return item.unrestricted_value
+                                    .toLowerCase()
+                                    .startsWith(query.toLowerCase());
+                              },
+                              itemSorter: (a, b) {
+                                return a.unrestricted_value
+                                    .compareTo(b.unrestricted_value);
+                              },
+                              itemBuilder: (context, item) {
+                                return row(item);
+                              },
+                              itemSubmitted: (item) {
+                                setState(() {
+                                  searchTextField.textField.controller.text =
+                                      item.unrestricted_value;
+                                  getAddresses(searchTextField
+                                      .textField.controller.text);
+                                });
+                              },
                             ),
-                            decoration: InputDecoration(
-                              contentPadding:
-                              EdgeInsets.fromLTRB(10.0, 30.0, 10.0, 20.0),
-                              hintText: "Поиск адресов...",
-                              hintStyle: TextStyle(color: Colors.black),
-                            ),
-                            itemFilter: (item, query) {
-                              return item.unrestricted_value
-                                  .toLowerCase()
-                                  .startsWith(query.toLowerCase());
-                            },
-                            itemSorter: (a, b) {
-                              return a.unrestricted_value
-                                  .compareTo(b.unrestricted_value);
-                            },
-                            itemBuilder: (context, item) {
-                              return row(item);
-                            },
-                            itemSubmitted: (item) {
-                              setState(() {
-                                searchTextField.textField.controller.text =
-                                    item.unrestricted_value;
-                                getAddresses(searchTextField
-                                    .textField.controller.text);
-                              });
-                            },
-                          ),
-                    )
+                    ),
                   ],
-                ),
-              ),
-              Divider(
-                color: Colors.white,
-              ),
-              Divider(
-                color: Colors.white,
-              ),
-              Text(
-                "Точка назначения",
-                style: TextStyle(
-                  fontSize: 25.0,
-                  color: Colors.black,
                 ),
               ),
               Container(
@@ -299,89 +300,198 @@ class _MyAddressState extends State<MyAddress> {
                       child: loading
                           ? CircularProgressIndicator()
                           : searchTextField1 =
-                          AutoCompleteTextField<AddressData>(
-                            key: key1,
-                            textChanged: (String value) {
-                              if (value.length > 0) {
-                                getDestination(value);
-                              }
-                            },
-                            clearOnSubmit: false,
-                            suggestions: addresses,
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 20.0,
+                              AutoCompleteTextField<AddressData>(
+                              key: key1,
+                              textChanged: (String value) {
+                                if (value.length > 0) {
+                                  getDestination(value);
+                                }
+                              },
+                              clearOnSubmit: false,
+                              suggestions: addresses,
+                              style: TextStyle(
+                                color: Color(0xFF595959),
+                                fontSize: 20.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: InputDecoration(
+                                contentPadding:
+                                    EdgeInsets.fromLTRB(10.0, 30.0, 10.0, 20.0),
+                                labelText: "Точка назначения",
+                                labelStyle: TextStyle(
+                                  color: Color(0xFFB2B2B2),
+                                  fontSize: 20.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              itemFilter: (item, query) {
+                                return item.unrestricted_value
+                                    .toLowerCase()
+                                    .startsWith(query.toLowerCase());
+                              },
+                              itemSorter: (a, b) {
+                                return a.unrestricted_value
+                                    .compareTo(b.unrestricted_value);
+                              },
+                              itemBuilder: (context, item) {
+                                return row(item);
+                              },
+                              itemSubmitted: (item) {
+                                setState(() {
+                                  searchTextField1.textField.controller.text =
+                                      item.unrestricted_value;
+                                  getDestination(searchTextField1
+                                      .textField.controller.text);
+                                });
+                              },
                             ),
-                            decoration: InputDecoration(
-                              contentPadding:
-                              EdgeInsets.fromLTRB(10.0, 30.0, 10.0, 20.0),
-                              hintText: "Поиск адресов...",
-                              hintStyle: TextStyle(color: Colors.black),
-                            ),
-                            itemFilter: (item, query) {
-                              return item.unrestricted_value
-                                  .toLowerCase()
-                                  .startsWith(query.toLowerCase());
-                            },
-                            itemSorter: (a, b) {
-                              return a.unrestricted_value
-                                  .compareTo(b.unrestricted_value);
-                            },
-                            itemBuilder: (context, item) {
-                              return row(item);
-
-                            },
-                            itemSubmitted: (item) {
-                              setState(() {
-                                searchTextField1.textField.controller.text =
-                                    item.unrestricted_value;
-                                getDestination(searchTextField1
-                                    .textField.controller.text);
-                              });
-                            },
-                          ),
                     )
                   ],
                 ),
               ),
-              ListTile(
-                leading: Text(
-                  "Способ оплаты:",
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Colors.black,
+              Divider(
+                color: Colors.transparent,
+              ),
+              Container(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    FlatButton(
+                      onPressed: () {
+                        showToast();
+                        setState(() {
+                          active = !active;
+                        });
+                      },
+                      shape: CircleBorder(
+                        side: BorderSide(color: Colors.transparent),
+                      ),
+                      color: active ? Color(0xFFF5F5F5) : Color(0xFF6099F7),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Icon(
+                          Icons.filter_list,
+                          color: active ? Color(0xFF6099F7) : Color(0xFFF5F5F5),
+                        ),
+                      ),
+                    ),
+                    Visibility(
+                      visible: _isVisible,
+                      child: FlatButton(
+                        onPressed: () {
+                          setState(() {
+                            toggleActive = !toggleActive;
+                          });
+                        },
+                        child: Text(
+                          "Тарифы",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15.0,
+                            color: !toggleActive ? Color(0xFFDCDCDC) : Color(0xFF6099F7),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Visibility(
+                      visible: _isVisible,
+                      child: FlatButton(
+                        onPressed: () {
+                          setState(() {
+                            toggleActive = !toggleActive;
+                          });
+                        },
+                        child: Text(
+                          "Опции",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15.0,
+                            color: toggleActive ? Color(0xFFDCDCDC) : Color(0xFF6099F7),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 75.0, right: 25.0),
+                      child: Text(
+                        "95 ₽",
+                        style: TextStyle(
+                          color: Color(0xFF6099F7),
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.only(left: 16.0, right: 20.0),
+                child: Divider(
+                  color: Color(0xFFBCBCBC),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.only(left: 16.0, right: 20.0),
+                child: AbsorbPointer(
+                  absorbing: false,
+                  child: TextFormField(
+                    readOnly: true,
+                    initialValue: "Наличными",
+                    style: TextStyle(color: Color(0xFFD0D0D0)),
+                    decoration: InputDecoration(
+                      labelText: "Способ оплаты",
+                      labelStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFBCBCBC),
+                          fontSize: 20.0),
+                      hintText: "Наличными",
+                      hintStyle: TextStyle(color: Color(0xFFD0D0D0)),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFEDEDED)),
+                      ),
+                      disabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFEDEDED)),
+                      ),
+                    ),
                   ),
                 ),
-                title: Text("Наличные",
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.black,
-                    )),
               ),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async{
+      floatingActionButton: FlatButton(
+        onPressed: () async {
           Path path = Path(
             myAddress: searchTextField.textField.controller.text,
             destinationMark: searchTextField1.textField.controller.text,
           );
           print(destUnrestricted_value);
-          await getTokenData(newRefToken);//Рефреш токен
+          await getTokenData(newRefToken); //Рефреш токен
           //отправка FCM
-          await createOrder();//создание заказа
-          await getOrder();//получение данных(отслеживание)
+          await createOrder(); //создание заказа
+          await getOrder(); //получение данных(отслеживание)
           if (searchTextField.textField.controller.text != "" ||
               searchTextField1.textField.controller.text != "") {
             Navigator.pushNamed(context, "/page3", arguments: path);
           }
         },
-        backgroundColor: Colors.blueGrey,
-        label: Text(
-          "Заказать такси",
-          style: TextStyle(color: Colors.white, fontSize: 22.0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(36.0),
+        ),
+        color: Color(0xFF6099F7),
+        child: Padding(
+          padding: const EdgeInsets.only(
+              bottom: 14.0, top: 14.0, left: 22.0, right: 22.0),
+          child: Text(
+            "Заказать такси",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -394,9 +504,5 @@ class Path {
   final String destinationMark;
   final String orderStatus;
 
-  Path({
-    this.myAddress,
-    this.destinationMark,
-    this.orderStatus
-  });
+  Path({this.myAddress, this.destinationMark, this.orderStatus});
 }
